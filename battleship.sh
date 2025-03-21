@@ -70,16 +70,34 @@ read
 clear
 
 declare -a playerBoard
+declare -a player2Board
+numbers=(1 2 3 4 5 6 7 8 9 10)
+letters=(a b c d e f g h i j)
 
+printf "Player 1 Board \n \n"
+printf "     "
 for ((y=0; y<10; y++)); do
     for ((x=0; x<10; x++)); do
         playerBoard[(y*10)+x]="~";
     done
 done
-
+for ((x=0; x<10; x++)); do
+    printf "%c |  " "${numbers[$x]}"
+done
+printf "\n"
+printf "  " 
+for ((x=0; x<51; x++)); do
+    printf "_" 
+done
+printf "\n"
 for ((y=0; y<10; y++)); do
+    printf "%c |  " "${letters[$y]}"
     for ((x=0; x<10; x++)); do
-        printf "%s\b" "${playerBoard[(y*10)+x]}";
+        printf "%c |  " "${playerBoard[$((y * 10 + x))]}"
     done
     printf "\n"
+done
+printf "  " 
+for ((x=0; x<51; x++)); do
+    printf "-" 
 done
