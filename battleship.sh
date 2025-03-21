@@ -24,6 +24,7 @@ IFS= read -r -d '' WELCOME<<-"EOF"
 ------------------------------------------------------------------
 This ASCII pic can be found at
 https://asciiart.website/index.php?art=transportation/nautical
+Press any key to start...
 EOF
 echo "$WELCOME" | while IFS= read -r line; do
     tput cup "$centre_y" "$centre_x"
@@ -56,7 +57,29 @@ done  |  awk -v brown="$(tput setaf 52)"\
         print
         next;
     }
+        if (NR == 18) {
+        print red $0 reset;
+        next;
+    }
     else {
         print $0;
     }
 }'
+read
+# Clear the terminal screen
+clear
+
+declare -a playerBoard
+
+for ((y=0; y<10; y++)); do
+    for ((x=0; x<10; x++)); do
+        playerBoard[(y*10)+x]="~";
+    done
+done
+
+for ((y=0; y<10; y++)); do
+    for ((x=0; x<10; x++)); do
+        printf "${playerBoard[(y*10)+x]} \b ";
+    done
+    echo "\n"
+done
