@@ -79,7 +79,7 @@ done
 
 for ((y=0; y<10; y++)); do
     for ((x=0; x<10; x++)); do
-        printf "${playerBoard[(y*10)+x]} \b ";
+        printf "%s\b" "${playerBoard[(y*10)+x]}";
     done
-    echo "\n"
+    printf "\n"
 done
