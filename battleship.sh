@@ -72,7 +72,10 @@ clear
 declare -a player1Board
 declare -a player2Board
 numbers=(1 2 3 4 5 6 7 8 9 10)
-letters=(a b c d e f g h i j)
+letters=(A B C D E F G H I J)
+fleetType=(C B c S D)
+fleetName=(carrier battleship cruiser submarine destroyer)
+fleetSize=(5 4 3 3 2)
 possibleDirections=(H V)
 declare -i playerTurn
 playerTurn=1
@@ -88,7 +91,7 @@ printBoard(){
     printf "Player %u Board \n \n" "$1"
     printf "     "
     for ((x=0; x<10; x++)); do
-        printf "%c |  " "${numbers[$x]}"
+        printf "%u |  " "${numbers[$x]}"
     done
     printf "\n"
     printf "  " 
@@ -107,6 +110,7 @@ printBoard(){
     for ((x=0; x<51; x++)); do
         printf "-" 
     done
+    printf "\n"
 }
 exists_in_list() {
     local value="$1"
@@ -141,42 +145,43 @@ actuallyPlaceShip(){
 placeShip(){
     local shipType=$1
     local shipLength=$2
+    local shipName=$3
     local doneWithPlacement=0
 
     while (( doneWithPlacement != 1 )); do
-        echo "Place your $shipType of length $shipLength"
-        read -p "Enter the starting column (i.e., a): " column
-        read -p "Enter the starting row (i.e., 2): " row
+        validPlacement=true
+        echo "Place your $shipName of length $shipLength"
+        read -p "Enter the starting row (i.e., A): " row
+        read -p "Enter the starting column (i.e., 2): " column
         read -p "Enter the direction (H for horizontal, V for vertical): " direction
 
-        row=$((row-1)) #the board starts at 0 but we show it to the user as 1
-        col=$(( $(printf "%d" "'$column") - 97 ))  # Convert alphabetical column to 0-9 format
-        
-
-        if ! (exists_in_list "$column" "${letters[@]}"); then
-            printf "This is not a valid column"
+        if ! (exists_in_list "$row" "${letters[@]}"); then
+            printf "This is not a valid row \n"
             continue
         fi
-        if ! (exists_in_list "$row" "${numbers[@]}"); then
-            printf "This is not a valid row"
+        if ! (exists_in_list "$column" "${numbers[@]}"); then
+            printf "This is not a valid column \n"
             continue
         fi
         if ! (exists_in_list "$direction" "${possibleDirections[@]}"); then
-            printf "This is not a valid direction"
+            printf "This is not a valid direction \n"
             continue
         fi
 
+        row=$(( $(printf "%d" "'$row") - 65 ))  # Convert uppercase alphabetical row to 0-9 format
+        column=$((column-1)) #the board starts at 0 but we show it to the user as 1
+
         # Check for valid placement based on direction
-        validPlacement=true
         if [ "$direction" = "H" ]; then
             # Out of bounds check
-            if (( col + shipLength - 1 >= 10 )); then
+            if (( column + shipLength - 1 >= 10 )); then
                 validPlacement=false
                 printf "Ship cannot be placed horizontally, it extends beyond the board\n"
+                continue
             else
                 # Check if any of the spaces are already occupied
                 for ((i=0; i<shipLength; i++)); do
-                    if (( player1Board[(row*10)+(col+i)] != "~" )); then
+                    if [[ ${player1Board[(row*10)+(column+i)]} != "~" ]]; then
                         validPlacement=false
                         printf "This position is already occupied\n"
                         break
@@ -188,10 +193,11 @@ placeShip(){
             if (( row + shipLength - 1 >= 10 )); then
                 validPlacement=false
                 printf "Ship cannot be placed vertically, it extends beyond the board\n"
+                continue
             else
                 # Check if any of the spaces are already occupied
                 for ((i=0; i<shipLength; i++)); do
-                    if (( player1Board[((row+i)*10)+col] != "~" )); then
+                    if [[ ${player1Board[((row+i)*10)+column]} != "~" ]]; then
                         validPlacement=false
                         printf "This position is already occupied\n"
                         break
@@ -201,15 +207,39 @@ placeShip(){
         fi
 
         if [ "$validPlacement" = true ]; then
-            actuallyPlaceShip "$shipType" "$shipLength" "$col" "$row" "$direction"
+            actuallyPlaceShip "$shipType" "$shipLength" "$column" "$row" "$direction"
             doneWithPlacement=1 
         fi
     done
 }
+
+placeFleet(){
+    centre_y=$(( (height / 2) - 10));
+    doneWithFleetPlacement=0
+    IFS= read -r -d '' SELECTION<<-"EOF"
+You must choose the position of the ships in your fleet
+Ship Type   |   Ship Size   |   Symbol
+------------|---------------|-----------
+Carrier     |	5 cells     |   C
+Battleship  |	4 cells     |   B
+Cruiser     |	3 cells     |   c
+Submarine   |	3 cells     |   S
+Destroyer   |	2 cells     |   D
+EOF
+echo "$SELECTION" | while IFS= read -r line; do
+    tput cup "$centre_y" "$centre_x"
+    #Set cursor to the middle (relative to the tree) of the screen
+    echo "$line"
+    ((centre_y++))  #You need to increment the row position if not you will just overwrite
+done
+    while (( doneWithFleetPlacement != 1 )); do
+        for ((t=0; t<5; t++)); do
+            placeShip "${fleetType[$t]}" "${fleetSize[$t]}" "${fleetName[$t]}"
+            printBoard $playerTurn  # Show board after placing each ship
+        done
+        doneWithFleetPlacement=1
+    done
+}
 initializeBoard
 printBoard $playerTurn
-actuallyPlaceShip "*" 4 1 1 "H"
-printBoard $playerTurn
-
-
-exists_in_list "a" "${letters[@]}"
+placeFleet
