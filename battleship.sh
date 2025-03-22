@@ -141,6 +141,28 @@ actuallyPlaceShip(){
         done
     fi
 }
+validateInput() {
+    local row="$1"
+    local column="$2"
+    local direction="$3"
+
+    if ! (exists_in_list "$row" "${letters[@]}"); then
+        printf "This is not a valid row \n"
+        return 1
+    fi
+    
+    if ! (exists_in_list "$column" "${numbers[@]}"); then
+        printf "This is not a valid column \n"
+        return 1
+    fi
+    
+    if ! (exists_in_list "$direction" "${possibleDirections[@]}"); then
+        printf "This is not a valid direction \n"
+        return 1
+    fi
+
+    return 0
+}
 
 placeShip(){
     local shipType=$1
@@ -155,17 +177,8 @@ placeShip(){
         read -p "Enter the starting column (i.e., 2): " column
         read -p "Enter the direction (H for horizontal, V for vertical): " direction
 
-        if ! (exists_in_list "$row" "${letters[@]}"); then
-            printf "This is not a valid row \n"
-            continue
-        fi
-        if ! (exists_in_list "$column" "${numbers[@]}"); then
-            printf "This is not a valid column \n"
-            continue
-        fi
-        if ! (exists_in_list "$direction" "${possibleDirections[@]}"); then
-            printf "This is not a valid direction \n"
-            continue
+        if ! validateInput "$row" "$column" "$direction"; then
+            continue  # If validation fails, restart the loop
         fi
 
         row=$(( $(printf "%d" "'$row") - 65 ))  # Convert uppercase alphabetical row to 0-9 format
