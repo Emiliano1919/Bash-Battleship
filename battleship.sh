@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/opt/homebrew/bin/bash
 tput clear;
 # Get terminal size
 height=$(tput lines);
@@ -144,7 +144,7 @@ actuallyPlaceShip(){
 validateInput() {
     local row="$1"
     local column="$2"
-    local direction="$3"
+    local direction="${3:-}"  # Default to empty string if not provided
 
     if ! (exists_in_list "$row" "${letters[@]}"); then
         printf "This is not a valid row \n"
@@ -156,7 +156,8 @@ validateInput() {
         return 1
     fi
     
-    if ! (exists_in_list "$direction" "${possibleDirections[@]}"); then
+    # Only validate direction if it's provided
+    if [[ -n "$direction" ]] && ! (exists_in_list "$direction" "${possibleDirections[@]}"); then
         printf "This is not a valid direction \n"
         return 1
     fi
@@ -253,6 +254,33 @@ done
         doneWithFleetPlacement=1
     done
 }
+
+attack(){
+    local -n playerToAttackBoard=$1
+    doneWithAttack=0
+    echo "Place the coordinates of your attack: X"
+    read -p "Enter the starting row (i.e., A): " row
+    read -p "Enter the starting column (i.e., 2): " column
+    while (( doneWithAttack != 1 )); do
+        if ! validateInput "$row" "$column" "$direction"; then
+            continue 
+        fi
+        doneWithAttack=1
+    done
+    row=$(( $(printf "%d" "'$row") - 65 ))  # Convert uppercase alphabetical row to 0-9 format
+    column=$((column-1)) #the board starts at 0 but we show it to the user as 1
+
+    if [[ ${playerToAttackBoard[(row*10)+column]} = "~" ]]; then
+        playerToAttackBoard[(row*10)+column]="0";
+        printf "Miss..."
+    else
+        playerToAttackBoard[(row*10)+column]="X";
+        printf "Hit!!!"
+    fi
+
+
+}
 initializeBoard
 printBoard $playerTurn
-placeFleet
+actuallyPlaceShip "C" 5 "A" 4 "H"
+attack player1Board
