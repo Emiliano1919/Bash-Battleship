@@ -129,15 +129,16 @@ actuallyPlaceShip(){
     local col=$3
     local row=$4
     local direction=$5
+    local -n board=$6
     if [ "$direction" = "H" ]; then
         for ((i=0; i<shipLength; i++)); do
-            player1Board[(row*10)+col+i]="$shipType";
+            board[(row*10)+col+i]="$shipType";
         done
     fi
 
     if [ "$direction" = "V" ]; then
         for ((i=0; i<shipLength; i++)); do
-            player1Board[((row+i)*10)+col]="$shipType";
+            board[((row+i)*10)+col]="$shipType";
         done
     fi
 }
@@ -169,6 +170,7 @@ placeShip(){
     local shipType=$1
     local shipLength=$2
     local shipName=$3
+    local -n currentBoard=$4
     local doneWithPlacement=0
 
     while (( doneWithPlacement != 1 )); do
@@ -195,7 +197,7 @@ placeShip(){
             else
                 # Check if any of the spaces are already occupied
                 for ((i=0; i<shipLength; i++)); do
-                    if [[ ${player1Board[(row*10)+(column+i)]} != "~" ]]; then
+                    if [[ ${currentBoard[(row*10)+(column+i)]} != "~" ]]; then
                         validPlacement=false
                         printf "This position is already occupied\n"
                         break
@@ -211,7 +213,7 @@ placeShip(){
             else
                 # Check if any of the spaces are already occupied
                 for ((i=0; i<shipLength; i++)); do
-                    if [[ ${player1Board[((row+i)*10)+column]} != "~" ]]; then
+                    if [[ ${currentBoard[((row+i)*10)+column]} != "~" ]]; then
                         validPlacement=false
                         printf "This position is already occupied\n"
                         break
@@ -221,13 +223,14 @@ placeShip(){
         fi
 
         if [ "$validPlacement" = true ]; then
-            actuallyPlaceShip "$shipType" "$shipLength" "$column" "$row" "$direction"
+            actuallyPlaceShip "$shipType" "$shipLength" "$column" "$row" "$direction" currentBoard
             doneWithPlacement=1 
         fi
     done
 }
 
 placeFleet(){
+    local -n currentPlayerBoard=$1
     centre_y=$(( (height / 2) - 10));
     doneWithFleetPlacement=0
     IFS= read -r -d '' SELECTION<<-"EOF"
@@ -248,7 +251,7 @@ echo "$SELECTION" | while IFS= read -r line; do
 done
     while (( doneWithFleetPlacement != 1 )); do
         for ((t=0; t<5; t++)); do
-            placeShip "${fleetType[$t]}" "${fleetSize[$t]}" "${fleetName[$t]}"
+            placeShip "${fleetType[$t]}" "${fleetSize[$t]}" "${fleetName[$t]}" currentPlayerBoard
             printBoard $playerTurn  # Show board after placing each ship
         done
         doneWithFleetPlacement=1
@@ -277,10 +280,7 @@ attack(){
         playerToAttackBoard[(row*10)+column]="X";
         printf "Hit!!!"
     fi
-
-
 }
 initializeBoard
 printBoard $playerTurn
-actuallyPlaceShip "C" 5 "A" 4 "H"
-attack player1Board
+placeFleet player1Board
