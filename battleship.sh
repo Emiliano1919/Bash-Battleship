@@ -6,7 +6,8 @@ width=$(tput cols);
 # Calculate the center coordinates
 centre_y=$(( (height / 2) - 10));
 centre_x=$(( (width / 2) - 32 ));
-IFS= read -r -d '' WELCOME<<-"EOF"
+welcome(){
+    IFS= read -r -d '' WELCOME<<-"EOF"
     █████████████████████████████████████████████████████████
     █▄─▄─▀██▀▄─██─▄─▄─█─▄─▄─█▄─▄███▄─▄▄─█─▄▄▄▄█─█─█▄─▄█▄─▄▄─█
     ██─▄─▀██─▀─████─█████─████─██▀██─▄█▀█▄▄▄▄─█─▄─██─███─▄▄▄█
@@ -26,48 +27,49 @@ This ASCII pic can be found at
 https://asciiart.website/index.php?art=transportation/nautical
 Press any key to start...
 EOF
-echo "$WELCOME" | while IFS= read -r line; do
-    tput cup "$centre_y" "$centre_x"
-    #Set cursor to the middle (relative to the tree) of the screen
-    echo "$line"
-    ((centre_y++))  #You need to increment the row position if not you will just overwrite
-done  |  awk -v brown="$(tput setaf 52)"\
-     -v green="$(tput setaf 34)"\
-     -v reset="$(tput sgr0)"\
-     -v yellow="$(tput setaf 214)"\
-     -v yellower="$(tput setaf 220)"\
-     -v white="$(tput setaf 15)"\
-     -v red="$(tput setaf 1)"\
-     -v reder="$(tput setaf 160)"\
-     -v blue="$(tput setaf 27)"\
-     -v gold="$(tput setaf 208)"\
-     -v blink="$(tput blink)"\
-     -v bold="$(tput bold)" '
-{
-    if (NR >= 1 && NR <= 4) {
-        print yellow $0 reset;
-        next;
-    } 
-    if (NR >= 12 && NR <= 13) {
-        gsub(/\)/, blink white ")" reset, $0);
-        gsub(/\./, blink blue "." reset, $0);
-        gsub(/\_/, blue "\_" reset, $0);
-        gsub(/\-/, blue "\-" reset, $0);
-        gsub(/\`/, blue "`" reset, $0);
-        print
-        next;
-    }
-        if (NR == 18) {
-        print red $0 reset;
-        next;
-    }
-    else {
-        print $0;
-    }
-}'
-read
-# Clear the terminal screen
-clear
+    echo "$WELCOME" | while IFS= read -r line; do
+        tput cup "$centre_y" "$centre_x"
+        #Set cursor to the middle (relative to the tree) of the screen
+        echo "$line"
+        ((centre_y++))  #You need to increment the row position if not you will just overwrite
+    done  |  awk -v brown="$(tput setaf 52)"\
+        -v green="$(tput setaf 34)"\
+        -v reset="$(tput sgr0)"\
+        -v yellow="$(tput setaf 214)"\
+        -v yellower="$(tput setaf 220)"\
+        -v white="$(tput setaf 15)"\
+        -v red="$(tput setaf 1)"\
+        -v reder="$(tput setaf 160)"\
+        -v blue="$(tput setaf 27)"\
+        -v gold="$(tput setaf 208)"\
+        -v blink="$(tput blink)"\
+        -v bold="$(tput bold)" '
+    {
+        if (NR >= 1 && NR <= 4) {
+            print yellow $0 reset;
+            next;
+        } 
+        if (NR >= 12 && NR <= 13) {
+            gsub(/\)/, blink white ")" reset, $0);
+            gsub(/\./, blink blue "." reset, $0);
+            gsub(/\_/, blue "\_" reset, $0);
+            gsub(/\-/, blue "\-" reset, $0);
+            gsub(/\`/, blue "`" reset, $0);
+            print
+            next;
+        }
+            if (NR == 18) {
+            print red $0 reset;
+            next;
+        }
+        else {
+            print $0;
+        }
+    }'
+    read
+    # Clear the terminal screen
+    clear
+}
 
 declare -a player1Board
 declare -a player2Board
@@ -274,10 +276,24 @@ done
         doneWithFleetPlacement=1
     done
 }
+actuallyAttack(){
+    local col=$1
+    local row=$2
+    local -n boardToAttack=$3
+    local -n playerAttackScore=$4
+    if [[ ${boardToAttack[(row*10)+col]} = "~" ]]; then
+        boardToAttack[(row*10)+col]="0";
+        printf "Miss... \n"
+    else
+        boardToAttack[(row*10)+col]="X";
+        ((playerAttackScore--))
+        printf "Hit!!! \n"
+    fi
+}   
 
 attack(){
     local -n playerToAttackBoard=$1
-    local playerToAttackScore=$2
+    local -n playerToAttackScore=$2
     doneWithAttack=0
     while (( doneWithAttack != 1 )); do
         echo "Place the coordinates of your attack:"
@@ -303,30 +319,81 @@ attack(){
     fi
 }
 
+placeShipsRandomly(){
+    local -n currentBoard=$1
+    for i in "${!fleetSize[@]}"; do
+        placed=false
+        while ! $placed; do
+            direction=${possibleDirections[$((RANDOM % 2))]}
+            row=$((RANDOM % 10))
+            col=$((RANDOM % 10))
+
+            # Check if the ship fits
+            if [ "$direction" = "H" ] && (( col + fleetSize[$i] <= 10 )); then
+                fit=true
+                for ((j=0; j<fleetSize[$i]; j++)); do
+                    if [[ ${currentBoard[(row*10)+(col+j)]} != "~" ]]; then
+                        fit=false
+                        break
+                    fi
+                done
+                if $fit; then
+                    actuallyPlaceShip "${fleetType[$i]}" "${fleetSize[$i]}" "$col" "$row" "$direction" currentBoard
+                    placed=true
+                fi
+            elif [ "$direction" = "V" ] && (( row + fleetSize[$i] <= 10 )); then
+                fit=true
+                for ((j=0; j<fleetSize[$i]; j++)); do
+                    if [[ ${currentBoard[((row+j)*10)+col]} != "~" ]]; then
+                        fit=false
+                        break
+                    fi
+                done
+                if $fit; then
+                    actuallyPlaceShip "${fleetType[$i]}" "${fleetSize[$i]}" "$col" "$row" "$direction" currentBoard
+                    placed=true
+                fi
+            fi
+        done
+    done
+}
+
 gameLoop(){
+    player1Score=17
+    player2Score=17
+    initializeBoard player1Board
+    initializeBoard player2Board
+    printBoard player1Board 1
     placeFleet player1Board
-    placeFleet player2Board
+    placeShipsRandomly player2Board
     while ((player1Score!=0 || player2Score!=0)); do
         if (( playerTurn == 1 )); then
+            printBoard player2Board 2 "Y"
             attack player2Board player2Score
             ((playerTurn++))
+            printf "Player 2 Score is: %u " "$player2Score"
+            read
         elif (( playerTurn == 2 )); then
-            attack player2Board player2Score
+            rowRANDOM=$((RANDOM % 10))
+            colRANDOM=$((RANDOM % 10))
+            #printBoard player1Board 1 "Y"
+            actuallyAttack colRANDOM rowRANDOM player1Board player1Score
             ((playerTurn--))
+            printBoard player1Board 1
+            printf "Player 1 Score is: %u " "$player1Score"
+            read
         fi
     done
     if (( player1Score == 0 )); then
         printf "The fleet of Player 1 has been destroyed \n
                 Player 2 wins"
-    elif (( player1Score == 0 )); then
-        printf "The fleet of Player 1 has been destroyed \n
-                Player 2 wins"
+    elif (( player2Score == 0 )); then
+        printf "The fleet of Player 2 has been destroyed \n
+                Player 1 wins"
     fi
 }
+welcome
+gameLoop
 
 
-initializeBoard player1Board
-printBoard player1Board 1
-actuallyPlaceShip "C" 5 "5" "A" "H" player1Board
-printBoard player1Board 1
-attack player1Board player1Score
+
