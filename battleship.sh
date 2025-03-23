@@ -71,14 +71,19 @@ clear
 
 declare -a player1Board
 declare -a player2Board
+declare -i player1Score
+declare -i player2Score
+declare -i playerTurn
+
+playerTurn=1
 numbers=(1 2 3 4 5 6 7 8 9 10)
 letters=(A B C D E F G H I J)
 fleetType=(C B c S D)
 fleetName=(carrier battleship cruiser submarine destroyer)
 fleetSize=(5 4 3 3 2)
 possibleDirections=(H V)
-declare -i playerTurn
-playerTurn=1
+
+
 initializeBoard(){
     for ((y=0; y<10; y++)); do
         for ((x=0; x<10; x++)); do
@@ -260,6 +265,7 @@ done
 
 attack(){
     local -n playerToAttackBoard=$1
+    local playerToAttackScore=$2
     doneWithAttack=0
     echo "Place the coordinates of your attack: X"
     read -p "Enter the starting row (i.e., A): " row
@@ -278,7 +284,29 @@ attack(){
         printf "Miss..."
     else
         playerToAttackBoard[(row*10)+column]="X";
+        ((playerToAttackScore--))
         printf "Hit!!!"
+    fi
+}
+
+gameLoop(){
+    placeFleet player1Board
+    placeFleet player2Board
+    while ((player1Score!=0 || player2Score!=0)); do
+        if (( playerTurn == 1 )); then
+            attack player2Board player2Score
+            ((playerTurn++))
+        elif (( playerTurn == 2 )); then
+            attack player2Board player2Score
+            ((playerTurn--))
+        fi
+    done
+    if (( player1Score == 0 )); then
+        printf "The fleet of Player 1 has been destroyed \n
+                Player 2 wins"
+    elif (( player1Score == 0 )); then
+        printf "The fleet of Player 1 has been destroyed \n
+                Player 2 wins"
     fi
 }
 initializeBoard
