@@ -193,8 +193,8 @@ placeShip(){
     while (( doneWithPlacement != 1 )); do
         validPlacement=true
         echo "Place your $shipName of length $shipLength"
-        read -p "Enter the starting row (i.e., A): " row
-        read -p "Enter the starting column (i.e., 2): " column
+        read -p "Enter the starting row (A-J): " row
+        read -p "Enter the starting column (1-10): " column
         read -p "Enter the direction (H for horizontal, V for vertical): " direction
 
         if ! validateInput "$row" "$column" "$direction"; then
@@ -279,25 +279,27 @@ attack(){
     local -n playerToAttackBoard=$1
     local playerToAttackScore=$2
     doneWithAttack=0
-    echo "Place the coordinates of your attack: X"
-    read -p "Enter the starting row (i.e., A): " row
-    read -p "Enter the starting column (i.e., 2): " column
     while (( doneWithAttack != 1 )); do
-        if ! validateInput "$row" "$column" "$direction"; then
-            continue 
+        echo "Place the coordinates of your attack:"
+        read -p "Enter the starting row (A-J): " row
+        read -p "Enter the starting column (1-10): " column
+
+        if validateInput "$row" "$column"; then
+            doneWithAttack=1
+        else
+            echo "Invalid input. Please enter a valid row (A-J) and column (1-10)."
         fi
-        doneWithAttack=1
     done
     row=$(( $(printf "%d" "'$row") - 65 ))  # Convert uppercase alphabetical row to 0-9 format
     column=$((column-1)) #the board starts at 0 but we show it to the user as 1
 
     if [[ ${playerToAttackBoard[(row*10)+column]} = "~" ]]; then
         playerToAttackBoard[(row*10)+column]="0";
-        printf "Miss..."
+        printf "Miss... \n"
     else
         playerToAttackBoard[(row*10)+column]="X";
         ((playerToAttackScore--))
-        printf "Hit!!!"
+        printf "Hit!!! \n"
     fi
 }
 
@@ -328,4 +330,3 @@ printBoard player1Board 1
 actuallyPlaceShip "C" 5 "5" "A" "H" player1Board
 printBoard player1Board 1
 attack player1Board player1Score
-printBoard player1Board 1 "Y"
