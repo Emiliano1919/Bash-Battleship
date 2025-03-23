@@ -85,15 +85,18 @@ possibleDirections=(H V)
 
 
 initializeBoard(){
+    local -n boardToInitialize=$1
     for ((y=0; y<10; y++)); do
         for ((x=0; x<10; x++)); do
-            player1Board[(y*10)+x]="~";
+            boardToInitialize[(y*10)+x]="~";
         done
     done
 }
 printBoard(){
+    local -n boardToPrint=$1
+    local playerNumber=$2
     clear
-    printf "Player %u Board \n \n" "$1"
+    printf "Player %u Board \n \n" "$playerNumber"
     printf "     "
     for ((x=0; x<10; x++)); do
         printf "%u |  " "${numbers[$x]}"
@@ -107,7 +110,7 @@ printBoard(){
     for ((y=0; y<10; y++)); do
         printf "%c |  " "${letters[$y]}"
         for ((x=0; x<10; x++)); do
-            printf "%c |  " "${player1Board[$((y * 10 + x))]}"
+            printf "%c |  " "${boardToPrint[$((y * 10 + x))]}"
         done
         printf "\n"
     done
@@ -309,6 +312,7 @@ gameLoop(){
                 Player 2 wins"
     fi
 }
-initializeBoard
-printBoard $playerTurn
-placeFleet player1Board
+
+
+initializeBoard player1Board
+printBoard player1Board 1
