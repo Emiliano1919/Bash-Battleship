@@ -95,6 +95,7 @@ initializeBoard(){
 printBoard(){
     local -n boardToPrint=$1
     local playerNumber=$2
+    local secretize="${3:-}" # Default to empty string if not provided
     clear
     printf "Player %u Board \n \n" "$playerNumber"
     printf "     "
@@ -110,7 +111,15 @@ printBoard(){
     for ((y=0; y<10; y++)); do
         printf "%c |  " "${letters[$y]}"
         for ((x=0; x<10; x++)); do
-            printf "%c |  " "${boardToPrint[$((y * 10 + x))]}"
+            if [ "$secretize" == "Y" ]; then
+                if exists_in_list "${boardToPrint[$((y * 10 + x))]}" "${fleetType[@]}" ; then
+                    printf "~ |  "
+                else
+                    printf "%c |  " "${boardToPrint[$((y * 10 + x))]}" # Show actual board value if no ship present
+                fi
+            else
+                printf "%c |  " "${boardToPrint[$((y * 10 + x))]}" # Print normally if not secretize
+            fi
         done
         printf "\n"
     done
@@ -260,7 +269,7 @@ done
     while (( doneWithFleetPlacement != 1 )); do
         for ((t=0; t<5; t++)); do
             placeShip "${fleetType[$t]}" "${fleetSize[$t]}" "${fleetName[$t]}" currentPlayerBoard
-            printBoard $playerTurn  # Show board after placing each ship
+            printBoard currentPlayerBoard  $playerTurn  # Show board after placing each ship
         done
         doneWithFleetPlacement=1
     done
@@ -316,3 +325,7 @@ gameLoop(){
 
 initializeBoard player1Board
 printBoard player1Board 1
+actuallyPlaceShip "C" 5 "5" "A" "H" player1Board
+printBoard player1Board 1
+attack player1Board player1Score
+printBoard player1Board 1 "Y"
